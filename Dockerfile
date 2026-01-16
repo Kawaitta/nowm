@@ -1,25 +1,27 @@
-# 1. Gunakan base image resmi dari Playwright (lebih stabil & sudah include browser)
-# Image ini sudah menyertakan Node.js dan semua OS dependencies yang dibutuhkan.
+# 1. Gunakan base image Playwright (karena paling berat depedensinya)
 FROM mcr.microsoft.com/playwright:v1.40.0-jammy
 
-# 2. Tentukan direktori kerja
+# 2. Install ngrok binary
+RUN apt-get update && apt-get install -y curl && \
+    curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && \
+    echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | tee /etc/apt/sources.list.d/ngrok.list && \
+    apt-get update && apt-get install ngrok
+
+# 3. Tentukan direktori kerja
 WORKDIR /app
 
-# 3. Salin package.json dan package-lock.json
+# 4. Install dependencies proyek
 COPY package*.json ./
-
-# 4. Install semua module yang ada di package.json
 RUN npm install
-
-# 5. Otomatis install Playwright browsers
-# Perintah ini akan mengunduh browser binaries (Chromium, Firefox, Webkit)
 RUN npx playwright install --with-deps
 
-# 6. Salin semua file proyek
+# 5. Salin kode proyek
 COPY . .
 
-# 7. Port aplikasi
+# 6. Expose port aplikasi
 EXPOSE 5000
 
-# 8. Jalankan aplikasi
-CMD ["node", "js_app.js"]
+# 7. Jalankan aplikasi dan ngrok sekaligus menggunakan shell
+# Ganti YOUR_AUTHTOKEN dengan token asli kamu
+CMD ngrok config add-authtoken 34djM6nPnjJ88b3m1WkX4rC0HC8_5J7VyC6xoUKJq9YD8EpP9 && \
+    ngrok http 5000 & node js_app.js
