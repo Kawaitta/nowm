@@ -1,19 +1,25 @@
-# 1. Gunakan image Node.js versi LTS sebagai dasar
-FROM node:20-slim
+# 1. Gunakan base image resmi dari Playwright (lebih stabil & sudah include browser)
+# Image ini sudah menyertakan Node.js dan semua OS dependencies yang dibutuhkan.
+FROM mcr.microsoft.com/playwright:v1.40.0-jammy
 
-# 2. Tentukan direktori kerja di dalam kontainer
+# 2. Tentukan direktori kerja
 WORKDIR /app
 
-# 3. Salin package.json dan package-lock.json terlebih dahulu
-# Ini dilakukan agar 'npm install' hanya jalan jika ada perubahan pada dependencies (cache optimization)
+# 3. Salin package.json dan package-lock.json
 COPY package*.json ./
 
-# 4. Install dependencies
-RUN npm install --production
+# 4. Install semua module yang ada di package.json
+RUN npm install
 
-# 5. Salin seluruh kode sumber proyek ke dalam kontainer
+# 5. Otomatis install Playwright browsers
+# Perintah ini akan mengunduh browser binaries (Chromium, Firefox, Webkit)
+RUN npx playwright install --with-deps
+
+# 6. Salin semua file proyek
 COPY . .
 
-# 6. Tentukan perintah untuk menjalankan aplikasi
-# Karena file utamanya 'js_app.js', kita panggil menggunakan node
+# 7. Port aplikasi
+EXPOSE 5000
+
+# 8. Jalankan aplikasi
 CMD ["node", "js_app.js"]
